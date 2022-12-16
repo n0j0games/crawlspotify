@@ -1,0 +1,64 @@
+img {
+    width: 55px;
+    height: 55px;
+}
+
+body {
+    font-family: arial, sans-serif;
+    background-color: #181425;
+    color: white;
+}
+
+table {
+    font-family: arial, sans-serif;
+    border-collapse: collapse;
+    width: 100%;
+}
+
+td, th {
+    /*border: 1px solid #dddddd;*/
+    text-align: left;
+    padding: 0;
+    margin: 0;
+    border: 0;
+}
+
+tbody:nth-child(even) {
+    background-color: #262B44;
+}
+
+.artist, .name, .album, .date {
+    color: #8B9BB4;
+    min-width: 100px;
+    margin: 0;
+}
+
+.artist, .featInfo, .date {
+    margin-left: 10px;
+}
+
+.name {
+    color: white
+}
+
+.album {
+    margin-top: 2px;
+    font-size: 15px;
+}
+
+a {
+    text-decoration: none;
+    color: white
+}
+
+a:hover {
+    color: #63C74D
+}
+
+.featInfo {
+    display: flex;
+    flex-direction: column;
+    min-height: 50px;
+    align-items: flex-start;
+    justify-content: center;
+}

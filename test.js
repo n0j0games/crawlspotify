@@ -1,4 +1,5 @@
-const redirect_uri = "https://noahschuette.github.io/crawlspotifyartist/index.html";
+//const redirect_uri = "http://localhost:63342/crawlspotify/index.html";
+const redirect_uri = "https://crawlspotify.netlify.app/index.html"
 const client_id = "d1cc5a453d334f8f968e03fb6ba1be00";
 const client_secret = "ef56b93808c24a91bda1f2ee35b78c85";
 const authorize = "https://accounts.spotify.com/authorize";
@@ -69,6 +70,7 @@ function handleSearch() {
         const artist = data.items[0];
         artistInfo.innerHTML = `Searching for <a href="${artist.external_urls.spotify}">${artist.name}</a>`;
         artist_id = artist.id;
+        artist_name = artist.name;
         initGetArtists();
     } else if ( this.status === 401 ){
         refreshToken();
@@ -82,20 +84,29 @@ function initGetArtists() {
     counterWithVarious = 0;
     songlist = [];
     albumlist = [];
-    const html = `<tr>
+    /*const html = `<tr>
+                <th></th>
                 <th>Main Artist</th>
                 <th>Name</th>
                 <th>Album Type</th>
                 <th>Date</th>
             </tr>
             `;
-    collectionDiv.innerHTML = html;
-    featDiv.innerHTML = html;
-    variousDiv.innerHTML = html;
+    const feathtml = `<tr>
+                <th></th>
+                <th>Main Artist</th>
+                <th>Name</th>
+                <th>Date</th>
+            </tr>
+            `;*/
+    collectionDiv.innerHTML = ``;
+    featDiv.innerHTML = ``;
+    //variousDiv.innerHTML = html;
     getArtistsSongs(0);
 }
 
 let artist_id = "";
+let artist_name = "";
 
 window.getArtistsSongs = function(offset) {
     const artist = `https://api.spotify.com/v1/artists/${artist_id}/albums?limit=50&offset=${offset}`;
@@ -111,24 +122,40 @@ function handleAlbums() {
             if (albumlist.includes(items[item].name))
                 continue;
             albumlist.push(items[item].name);
-            const content = `<tr><th>${items[item].artists[0].name}</th>
-                <th><b><a target="_blank" href="${items[item].external_urls.spotify}">${items[item].name}</a></b></th>
-                <th>${items[item].album_type}</th>
-                <th>${items[item].release_date}</th>
+            const content = `<tr>
+                <th><img src="${items[item].images[0].url}" alt=""></th>
+                <th><p class="artist">${items[item].artists[0].name}</p></th>
+                <th><b><a class="name" target="_blank" href="${items[item].external_urls.spotify}">${items[item].name}</a></b></th>
+                <th><p class="album">${items[item].album_type}</p></th>
+                <th><p class="date">${items[item].release_date}</p></th>
                 </th>`;
-            if (items[item].artists[0].name === "Verschiedene Interpreten" || items[item].album_type === "compilation") {
-                variousDiv.innerHTML += content;
+
+            const featcontent = `<tr>
+                <th><img src="${items[item].images[0].url}" alt=""></th>
+                <th><p class="artist">${items[item].artists[0].name}</p></th>
+                <th><b><a class="name" target="_blank" href="${items[item].external_urls.spotify}">${items[item].name}</a></b></th>
+                <th><p class="date">${items[item].release_date}</p></th>
+                </th>`;
+
+            if (/*items[item].artists[0].name === "Verschiedene Interpreten" ||*/ items[item].album_type === "compilation") {
+                //variousDiv.innerHTML += content;
                 counterWithVarious++;
                 continue;
             }
             counter++;
-            counterP.innerHTML = `Found: ${counter} albums/singles, and ${counterWithVarious} compilations: `;
+            //counterP.innerHTML = `Found: ${counter} albums/singles, and ${counterWithVarious} compilations: `;
+            counterP.innerHTML = `Found: ${counter} items`;
             if (items[item].album_group === "appears_on") {
-                featDiv.innerHTML += content;
+                /*if (items[item].album_type === "album") {
+
+                } else {
+                    featDiv.innerHTML += featcontent;
+                }*/
+                console.log(items[item].name)
+                getAlbumTracks(items[item]);
             } else {
                 collectionDiv.innerHTML += content;
             }
-            //getAlbumTracks(items[item].id);
         }
         if (data.total > data.offset + data.limit) {
             getArtistsSongs(data.offset + data.limit);
@@ -140,20 +167,46 @@ function handleAlbums() {
     }
 }
 
-function getAlbumTracks(id) {
-    const album = `https://api.spotify.com/v1/albums/${id}/tracks?limit=50`;
-    callApi("GET", album, null, handleAlbum);
-}
+function getAlbumTracks(albumInfo) {
+    const album = `https://api.spotify.com/v1/albums/${albumInfo.id}/tracks?limit=50`;
+    callApi("GET", album, null, function () {
+        if ( this.status === 200 ){
+            let data = JSON.parse(this.responseText);
+            console.log("album:", data);
+            let items = data.items;
+            for (let item in items) {
+                let artists = items[item].artists
+                let hasArtist = false
+                for (let artist in artists) {
+                    if (artists[artist].name == artist_name)
+                        hasArtist = true
+                }
+                if (!hasArtist)
+                    continue;
 
-function handleAlbum() {
-    if ( this.status === 200 ){
-        let data = JSON.parse(this.responseText);
-        console.log("album:", data);
-    } else if ( this.status === 401 ){
-        refreshToken();
-    } else {
-        console.error(this.responseText);
-    }
+                const content = `<tr>
+                <th><img src="${albumInfo.images[0].url}" alt=""></th>
+                <th><p class="artist">${items[item].artists[0].name}</p></th>
+                <th>
+                    <div class="featInfo">
+                        <a class="name" target="_blank" href="${items[item].external_urls.spotify}">${items[item].name}</a>
+                        <p class="album">${albumInfo.name}</p>
+                    </div>
+                </th>
+                <th><p class="date">${albumInfo.release_date}</p></th>
+                </th>`;
+                featDiv.innerHTML += content;
+            }
+            if (data.total > data.offset + data.limit) {
+                getArtistsSongs(data.offset + data.limit);
+            }
+
+        } else if ( this.status === 401 ){
+            refreshToken();
+        } else {
+            console.error(this.responseText);
+        }
+    });
 }
 
 /*
@@ -228,7 +281,7 @@ window.requestAuthorization = function (){
     url += "&response_type=code";
     url += "&redirect_uri=" + encodeURI(redirect_uri);
     url += "&show_dialog=true";
-    url += "&scope=user-follow-read user-read-private";
+    url += "&scope=user-follow-read user-read-private playlist-modify-public";
     //url += "&scope=user-follow-read user-read-private user-read-email user-modify-playback-state user-read-playback-position user-library-read streaming user-read-playback-state user-read-recently-played playlist-read-private";
     window.location.href = url; // Show Spotify's authorization screen
 }
@@ -237,6 +290,21 @@ window.logout = function () {
     localStorage.removeItem("access_token");
     localStorage.removeItem("refresh_token");
     location.reload();
+}
+
+/*
+    Create Playlist
+ */
+
+window.createPlaylist = function () {
+    console.log(collectionDiv,featDiv)
+    let featJSON = []
+    for (let i = 0, row; row = featDiv.rows[i]; i++) {
+        for (let j = 0, col; col = row.cells[j]; j++) {
+            console.log(featDiv[row][col].toString())
+        }
+    }
+
 }
 
 /*
